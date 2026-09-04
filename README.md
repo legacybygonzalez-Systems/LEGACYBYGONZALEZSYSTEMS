@@ -1,38 +1,74 @@
 # Las Vegas Realtor Lead Scraper
 
-Scrapes realtor name/phone leads from a real estate agent directory (default
-target: realtor.com's Las Vegas agent search) and exports them to a CSV file
-and/or a Google Sheet, so you can start calling.
+Pulls realtor name/phone leads for the Las Vegas area and exports them to a
+CSV file and/or a Google Sheet, so you can start calling. Two lead sources
+are included:
+
+| Source | Risk | Gets phone numbers? | Needs |
+|---|---|---|---|
+| **Google Places API** (`places_cli.py`) — recommended | Low — official API, not scraping, no ToS conflict | Yes, directly | A free/low-cost Google Maps Platform API key |
+| **realtor.com scraper** (`cli.py`) | Higher — realtor.com's ToS prohibits scraping, has anti-bot | Sometimes — often gated behind a "contact agent" click | Nothing but this code |
+
+**Use the Places API path unless you have a specific reason not to.** It's
+the lower-risk option you'd expect from an "official business directory"
+approach: Google's Places API is built and priced for exactly this kind of
+business lookup (name, phone, address), so pulling "real estate agents in
+Las Vegas, NV" through it isn't scraping at all — no ToS conflict, no
+anti-bot blocking, no brittle CSS selectors to maintain.
 
 ## Before you run this
 
 **Legal/compliance, read this first:**
 
-- Many large real estate sites (realtor.com, Zillow, etc.) prohibit
-  automated scraping in their Terms of Service. Scraping publicly viewable
-  pages is generally not a *criminal* matter, but it can be a breach of
-  contract, and sites like these run active anti-bot systems that may block
-  or rate-limit you. Consider a smaller local directory, a brokerage's own
-  public roster, or the Nevada Real Estate Division's public license lookup
-  if you want a lower-risk source.
-- Cold-calling scraped phone numbers is subject to TCPA rules in the US.
-  Business lines and B2B calls have more leeway than consumer cell numbers,
-  and the National Do Not Call Registry has a realtor/B2B carve-out in some
-  cases, but this is not legal advice — check current TCPA/DNC rules (or
-  talk to a lawyer) before running a calling campaign, especially at scale.
-- This tool defaults to slow, randomized delays between page loads and does
-  not parallelize requests, specifically to avoid hammering the target
-  site. Don't remove that without a good reason.
+- Cold-calling leads (from either source) is subject to TCPA rules in the
+  US. Business lines and B2B calls have more leeway than consumer cell
+  numbers, and there's a realtor/B2B carve-out in some National Do Not Call
+  Registry cases, but this is not legal advice — check current TCPA/DNC
+  rules (or talk to a lawyer) before running a calling campaign at scale.
+- If you use the realtor.com scraper instead: its Terms of Service
+  prohibit automated scraping. Scraping publicly viewable pages is
+  generally not a *criminal* matter, but it is a breach-of-contract risk,
+  and the site runs active anti-bot systems that may block you. That
+  scraper defaults to slow, randomized delays and doesn't parallelize
+  requests, specifically to reduce load on the site — don't remove that
+  without a good reason.
 
-**This code was built without live access to realtor.com** (the sandbox it
-was written in couldn't reach the internet). The scraping logic, CSV
-export, and Google Sheets export are all tested and working — but the CSS
-selectors that find the agent name/phone/brokerage on the actual live page
-are best-effort guesses and will very likely need a small tune-up. See
-"Fixing selectors" below; it's a 5-minute fix once you can see the real
-page.
+**Both were built and tested from a sandbox with no general internet
+access** (its network policy blocks browsing to any ordinary website,
+realtor.com included — confirmed by testing several other sites, not just
+that one). `places.googleapis.com` was the one external host reachable
+from that sandbox, so the Places API path was verified end-to-end against
+the real live endpoint (confirmed by making an actual request that
+returned Google's own "API key not valid" error — i.e. everything up to
+supplying a real key works). The realtor.com scraper's parsing logic is
+unit-tested against fixture HTML, but its CSS selectors are best-effort
+guesses for the live page and will likely need a quick manual tune-up —
+see "Fixing selectors" below.
 
-## Setup
+## Quick start: Google Places API (recommended)
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create/pick
+   a project and enable the **"Places API (New)"**.
+2. Create an API key (APIs & Services -> Credentials). Billing needs to be
+   enabled on the project, but Google's recurring monthly credit covers a
+   few thousand searches for this use case in most cases.
+3. Run it:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python -m realtor_scraper.places_cli --api-key YOUR_KEY --max-results 60
+# or: export GOOGLE_PLACES_API_KEY=YOUR_KEY and drop --api-key
+```
+
+This writes `output/leads_places.csv` (same columns as below). Add
+`--sheets --sheet-id ... ` to also push straight to Google Sheets (see
+"Google Sheets export" below for credentials setup). Tune the search with
+`--query "real estate agents in Henderson, NV"` etc.
+
+## Setup (realtor.com scraper)
 
 ```bash
 python3 -m venv .venv
@@ -82,6 +118,20 @@ friendly directory.
 
 ## Google Sheets export
 
+**"Which email do I share the sheet with?"** — there isn't one assigned
+ahead of time. This code runs on your own machine (or wherever you run it),
+so it authenticates as a **service account** you create yourself in your
+own Google Cloud project (steps below) — its email is auto-generated,
+something like `leads-writer@your-project.iam.gserviceaccount.com`, and
+you'll see it the moment you create it. You share your target sheet with
+that address, the same way you'd share it with any collaborator.
+
+(If instead you're working with Claude in a chat session that has a Google
+Drive connector enabled, Claude can create/update a Sheet directly in
+*your own* connected Google account with no service account needed at all
+— that's a different mechanism from this standalone script, which runs
+unattended outside any chat session and needs its own credential.)
+
 1. In [Google Cloud Console](https://console.cloud.google.com/), create (or
    pick) a project, then enable the **Google Sheets API** and **Google
    Drive API**.
@@ -124,5 +174,6 @@ pip install pytest
 pytest tests/ -v
 ```
 
-Tests run against a fixed HTML fixture, not the live site, so they work
-without network access and verify the parsing logic itself is correct.
+Tests run against a fixed HTML fixture / mocked API responses, not the
+live sites, so they work without network access and verify the parsing
+logic itself is correct.
