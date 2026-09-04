@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Secrets -- never commit these
+config.yaml
+credentials.json
+*.json.key
+.env
+
+# Scraper output
+output/*.csv

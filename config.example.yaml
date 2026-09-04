@@ -1,0 +1,31 @@
+# Copy this file to config.yaml and edit as needed.
+# Secrets (Google credentials path, sheet ID) can also be set via env vars
+# GOOGLE_SHEET_ID / GOOGLE_CREDENTIALS_PATH instead of here -- see README.
+
+site: realtor_com          # which adapter to use (see realtor_scraper/sites/)
+city: "Las Vegas"
+state: "NV"
+
+max_pages: 5                # stop after this many results pages
+min_delay: 3.0               # seconds, random delay floor between page loads
+max_delay: 7.0               # seconds, random delay ceiling between page loads
+headless: true                # set false to watch the browser while debugging selectors
+
+csv_path: "output/leads.csv"
+
+# Google Sheets (optional -- only needed if you run with --sheets)
+google_sheet_id: ""                     # the long ID in your sheet's URL
+google_credentials_path: "credentials.json"  # service account JSON key
+google_worksheet_name: "Leads"
+
+# CSS selectors used to parse the target site. Defaults live in
+# realtor_scraper/sites/realtor_com.py -- override any of them here if the
+# site's markup differs from what's built in (see that file's docstring for
+# how to find the right selectors via your browser's inspector).
+selectors: {}
+  # card: '[data-testid="agent-card"]'
+  # name: '[data-testid="agent-name"]'
+  # phone: 'a[href^="tel:"]'
+  # brokerage: '[data-testid="agent-group"]'
+  # profile_link: 'a[href]'
+  # next_page: 'a[aria-label="Go to next page"]'
