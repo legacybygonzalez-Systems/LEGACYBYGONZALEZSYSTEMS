@@ -8,6 +8,11 @@ class AgentLead:
 
     name: str
     phone: str = ""
+    website: str = ""
+    rating: str = ""
+    review_count: str = ""
+    business_type: str = ""
+    business_status: str = ""
     brokerage: str = ""
     city: str = ""
     state: str = ""
@@ -28,6 +33,11 @@ class AgentLead:
         return [
             self.name,
             self.phone,
+            self.website,
+            self.rating,
+            self.review_count,
+            self.business_type,
+            self.business_status,
             self.brokerage,
             self.city,
             self.state,
@@ -43,6 +53,11 @@ class AgentLead:
         return [
             "Name",
             "Phone",
+            "Website",
+            "Rating",
+            "Reviews",
+            "Type",
+            "Status",
             "Brokerage",
             "City",
             "State",

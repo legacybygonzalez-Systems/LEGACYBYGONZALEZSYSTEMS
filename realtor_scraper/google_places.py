@@ -37,6 +37,13 @@ FIELD_MASK = ",".join(
         "places.googleMapsUri",
         "places.websiteUri",
         "places.id",
+        # Qualification signals. These sit in the same (or a cheaper) billing
+        # tier as the phone fields above, so requesting them doesn't
+        # meaningfully change the per-search cost.
+        "places.rating",
+        "places.userRatingCount",
+        "places.businessStatus",
+        "places.primaryTypeDisplayName",
         "nextPageToken",
     ]
 )
@@ -87,10 +94,17 @@ def fetch_leads(
             if not name:
                 continue
             phone = place.get("nationalPhoneNumber") or place.get("internationalPhoneNumber") or ""
+            rating = place.get("rating")
+            review_count = place.get("userRatingCount")
             leads.append(
                 AgentLead(
                     name=name,
                     phone=phone,
+                    website=place.get("websiteUri", ""),
+                    rating="" if rating is None else str(rating),
+                    review_count="" if review_count is None else str(review_count),
+                    business_type=place.get("primaryTypeDisplayName", {}).get("text", ""),
+                    business_status=place.get("businessStatus", ""),
                     brokerage="",
                     city=city,
                     state=state,
